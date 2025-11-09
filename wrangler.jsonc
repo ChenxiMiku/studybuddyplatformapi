@@ -1,0 +1,46 @@
+﻿{
+  "name": "studybuddyplatformapi",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-11-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "./frontend-react/dist",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "studybuddyplatformdb",
+      "database_id": "d2fc1342-b595-49b4-adc6-675252d9a2cc"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CHAT_ROOM",
+        "class_name": "ChatRoom",
+        "script_name": "studybuddyplatformapi"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": ["ChatRoom"]
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "ONLINE_STATUS",
+      "id": "719b640d340046d1800f13faab1fa571",
+      "preview_id": "719b640d340046d1800f13faab1fa571"
+    }
+  ],
+  "vars": {
+    "JWT_ACCESS_EXPIRATION": "24h",
+    "JWT_REFRESH_EXPIRATION": "30d"
+  }
+}

@@ -194,8 +194,5 @@ dist
 ### Wrangler ###
 .wrangler/
 
-# Wrangler 配置文件（包含敏感资源 ID）
-wrangler.jsonc
-!wrangler.jsonc.example
 
 
