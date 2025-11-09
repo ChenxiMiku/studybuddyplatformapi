@@ -9,12 +9,14 @@ export class UserUpdate extends D1UpdateEndpoint<HandleArgs> {
 			username: true,
 			email: true,
 			password_hash: true,
+			bio: true,
+			avatar_url: true,
 			goals: true,
 			study_preference: true,
 		}),
 		tags: ["Users"],
 		summary: "Update user information",
-		description: "Update user profile information. To change password, use /users/:id/change-password endpoint.",
+		description: "Update user profile information including bio and avatar. To change password, use /users/:id/change-password endpoint.",
 	};
 
 	getSchema() {

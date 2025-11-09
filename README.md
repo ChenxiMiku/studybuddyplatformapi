@@ -27,34 +27,110 @@
 - ✅ 按时间搜索学习伙伴
 - ✅ 按学习偏好过滤
 
+### 学习小组 ⭐ 新功能
+- ✅ 创建公开/私密学习小组
+- ✅ 搜索和发现学习小组
+- ✅ 加入小组（公开小组即时加入，私密小组需申请）
+- ✅ 成员管理（批准/拒绝/移除/升级）
+- ✅ 小组资料管理
+
+### 实时消息系统 💬 最新功能
+- ✅ 私聊（1对1 实时对话）
+- ✅ 群聊（学习小组内群聊）
+- ✅ 在线状态（基于 KV 的实时状态）
+- ✅ 消息历史（持久化存储，支持分页）
+- ✅ WebSocket 实时推送
+- 📖 [快速入门](docs/MESSAGING_QUICKSTART.md) | [完整文档](docs/MESSAGING_SYSTEM.md)
+
+## � 文档导航
+
+- 📌 [文档索引](docs/INDEX.md) - 快速找到您需要的文档
+- 📂 [项目结构](PROJECT_STRUCTURE.md) - 了解项目组织结构
+- �🚀 [快速参考](docs/QUICK_REFERENCE.md) - 常用命令速查表
+- 📖 [API 使用指南](docs/API_USAGE_ZH.md) - API 详细使用说明
+- 🔐 [JWT 认证指南](docs/JWT_AUTH_GUIDE.md) - 认证系统说明
+- 💬 [消息系统文档](docs/MESSAGING_SYSTEM.md) - 实时消息功能
+- 🛠️ [脚本工具说明](scripts/README.md) - 开发和部署脚本
+
 ## 🚀 快速开始
 
-### 部署
-```bash
-npm run deploy
+### 首次配置
+
+**1. 创建配置文件**
+
+复制配置模板并填入你的资源 ID：
+
+```powershell
+Copy-Item wrangler.jsonc.example wrangler.jsonc
 ```
 
-### 本地开发
-```bash
-npm run dev
+编辑 `wrangler.jsonc`，填入：
+- D1 数据库 ID（通过 `npx wrangler d1 list` 获取）
+- KV Namespace ID（通过 `npx wrangler kv:namespace list` 获取）
+
+**2. 设置 JWT Secret**
+
+在 Cloudflare Workers 中设置 JWT_SECRET：
+
+```powershell
+npx wrangler secret put JWT_SECRET
 ```
 
-### 测试 API
-```bash
-.\test-api.ps1
+验证密钥已设置：
+```powershell
+npx wrangler secret list
+```
+
+详细配置请参考：[安全配置指南](docs/SECURITY_CONFIG.md)
+
+### 部署到生产环境
+
+**一键部署：**
+```powershell
+.\scripts\deployment\build-and-deploy.ps1
+```
+
+**分步部署：**
+```powershell
+# 1. 设置数据库（首次）
+.\scripts\deployment\setup-database.ps1
+
+# 2. 构建前端
+cd frontend-react
+npm run build
+cd ..
+
+# 3. 部署到 Cloudflare Workers
+npx wrangler deploy
+
+# 4. 测试生产环境
+.\scripts\deployment\test-production.ps1
 ```
 
 ## 📖 API 文档
 
 **在线文档**: https://studybuddyplatformapi.15098646873.workers.dev/
 
+API 支持 OpenAPI 3.0 规范，提供 Swagger UI 交互式文档界面。
+
 ## 📚 详细文档
 
-- [用户功能更新说明](USER_FEATURES_UPDATE.md)
-- [功能总结](FINAL_SUMMARY.md)
-- [更新日志](CHANGELOG.md)
-- [API 使用指南](API_USAGE.md)
-- [使用示例](EXAMPLES.md)
+### 核心功能
+- [API 使用指南（中文）](docs/API_USAGE_ZH.md)
+- [API 使用指南（英文）](docs/API_USAGE_EN.md)
+- [API 概览（中文）](docs/API_OVERVIEW_ZH.md)
+- [使用示例（中文）](docs/EXAMPLES.md)
+- [使用示例（英文）](docs/EXAMPLES_EN.md)
+
+### 实时消息系统 💬
+- [快速入门](docs/MESSAGING_QUICKSTART.md) - 30秒快速配置
+- [完整文档](docs/MESSAGING_SYSTEM.md) - API 详细说明
+- [部署指南](docs/MESSAGING_DEPLOYMENT.md) - 生产环境部署
+
+### 其他功能
+- [JWT 认证指南](docs/JWT_AUTH_GUIDE.md)
+- [好友系统](docs/FRIENDS_SYSTEM.md)
+- [快速参考](docs/QUICK_REFERENCE.md)
 
 ## 🎯 API 端点概览
 
@@ -62,12 +138,14 @@ npm run dev
 |------|--------|------|
 | 认证 | 2 | 注册、登录 |
 | 用户 | 7 | CRUD + 资料 + 密码 |
+| 学习小组 | 8 | 创建、加入、管理小组 ⭐ |
+| 消息系统 | 5 + WS | 私聊、群聊、在线状态 💬 |
 | 课程 | 5 | 课程管理 |
 | 技能 | 5 | 技能管理 |
 | 用户技能 | 5 | 技能关联 |
 | 可用时间 | 5 | 时间管理 |
 | 搜索 | 1 | 智能匹配 |
-| **总计** | **32** | 完整功能 |
+| **总计** | **45+** | 完整功能 |
 
 ## 💡 使用示例
 
@@ -99,7 +177,10 @@ curl "https://studybuddyplatformapi.15098646873.workers.dev/search/match?user_id
 - **运行时**: Cloudflare Workers
 - **框架**: Hono + Chanfana
 - **数据库**: Cloudflare D1 (SQLite)
+- **缓存**: Cloudflare KV (在线状态)
+- **实时通信**: WebSocket
 - **验证**: Zod
+- **认证**: JWT
 - **语言**: TypeScript
 - **文档**: OpenAPI 3.0
 
