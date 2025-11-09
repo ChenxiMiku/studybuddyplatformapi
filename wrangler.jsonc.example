@@ -1,0 +1,56 @@
+{
+	"compatibility_date": "2025-10-08",
+	"main": "src/index.ts",
+	"name": "studybuddyplatformapi",
+	"upload_source_maps": true,
+	"observability": {
+		"enabled": true
+	},
+	// ⚠️ 配置说明：
+	// 1. 复制此文件为 wrangler.jsonc
+	// 2. 填入你的实际资源 ID
+	// 3. wrangler.jsonc 已在 .gitignore 中，不会提交到 Git
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "studybuddyplatformdb",
+			"database_id": "your-database-id-here"
+			// 获取方法：npx wrangler d1 list
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "ONLINE_STATUS",
+			"id": "your-kv-namespace-id-here",
+			"preview_id": "your-preview-kv-namespace-id-here"
+			// 获取方法：npx wrangler kv:namespace list
+		}
+	],
+	// ⚠️ JWT_SECRET 配置：
+	// 使用 Cloudflare Secrets 设置（不要在这里设置）
+	// 运行命令：npx wrangler secret put JWT_SECRET
+	// 查看已设置的 secrets：npx wrangler secret list
+	"vars": {
+		"JWT_ACCESS_EXPIRATION": "24h",
+		"JWT_REFRESH_EXPIRATION": "30d"
+	},
+	"assets": {
+		"directory": "./frontend-react/dist",
+		"binding": "ASSETS"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "CHAT_ROOM",
+				"class_name": "ChatRoom",
+				"script_name": "studybuddyplatformapi"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": ["ChatRoom"]
+		}
+	]
+}

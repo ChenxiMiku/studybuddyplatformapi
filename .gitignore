@@ -193,7 +193,9 @@ dist
 
 ### Wrangler ###
 .wrangler/
-.env*
-!.env.example
-.dev.vars*
-!.dev.vars.example
+
+# Wrangler 配置文件（包含敏感资源 ID）
+wrangler.jsonc
+!wrangler.jsonc.example
+
+
