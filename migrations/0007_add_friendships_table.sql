@@ -12,6 +12,6 @@ CREATE TABLE IF NOT EXISTS friendships (
     UNIQUE(user_id, friend_id)
 );
 
-CREATE INDEX idx_friendships_user_id ON friendships(user_id);
-CREATE INDEX idx_friendships_friend_id ON friendships(friend_id);
-CREATE INDEX idx_friendships_status ON friendships(status);
+CREATE INDEX IF NOT EXISTS idx_friendships_user_id ON friendships(user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_friend_id ON friendships(friend_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);
