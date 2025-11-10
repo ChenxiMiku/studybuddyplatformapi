@@ -1,12 +1,13 @@
 import { OpenAPIRoute, contentJson } from "chanfana";
 import { z } from "zod";
 import { AppContext } from "../../types";
+import { hashPassword, comparePassword } from "../../utils/password";
 
 export class UserChangePassword extends OpenAPIRoute {
 	public schema = {
 		tags: ["Users"],
 		summary: "Change password",
-		description: "Change password for a specific user",
+		description: "Change password for a specific user. Requires valid authentication.",
 		request: {
 			params: z.object({
 				id: z.string().transform(Number).describe("User ID"),
@@ -59,9 +60,10 @@ export class UserChangePassword extends OpenAPIRoute {
 			);
 		}
 
-		// Verify old password
-		const old_password_hash = await this.hashPassword(old_password);
-		if (old_password_hash !== user.password_hash) {
+		// Verify old password using bcrypt
+		const isOldPasswordValid = await comparePassword(old_password, user.password_hash as string);
+		
+		if (!isOldPasswordValid) {
 			return c.json(
 				{
 					success: false,
@@ -71,8 +73,10 @@ export class UserChangePassword extends OpenAPIRoute {
 			);
 		}
 
+		// Hash new password using bcrypt
+		const new_password_hash = await hashPassword(new_password);
+		
 		// Update password
-		const new_password_hash = await this.hashPassword(new_password);
 		await c.env.DB.prepare(
 			"UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?"
 		)
@@ -85,13 +89,5 @@ export class UserChangePassword extends OpenAPIRoute {
 				message: "Password changed successfully",
 			},
 		};
-	}
-
-	private async hashPassword(password: string): Promise<string> {
-		const encoder = new TextEncoder();
-		const data = encoder.encode(password);
-		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-		const hashArray = Array.from(new Uint8Array(hashBuffer));
-		return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 	}
 }

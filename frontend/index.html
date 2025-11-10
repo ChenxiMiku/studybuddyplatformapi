@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Buddy API Quick Tester</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 1.5rem;
+            background: #f4f6fa;
+        }
+        h1 {
+            margin-top: 0;
+        }
+        section {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        fieldset {
+            border: 1px solid #d4d8e3;
+            border-radius: 6px;
+            padding: 0.75rem 1rem 1rem;
+            margin-bottom: 1rem;
+        }
+        legend {
+            padding: 0 0.5rem;
+            font-weight: 600;
+        }
+        label {
+            display: block;
+            font-size: 0.95rem;
+            margin: 0.75rem 0 0.25rem;
+        }
+        input, select, textarea, button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.55rem 0.65rem;
+            font: inherit;
+            border: 1px solid #c8ccda;
+            border-radius: 4px;
+        }
+        button {
+            cursor: pointer;
+            margin-top: 0.75rem;
+            background: #2f6bff;
+            color: #ffffff;
+            font-weight: 600;
+            border: none;
+        }
+        button.secondary {
+            background: #8a8f9d;
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .row > div {
+            flex: 1 1 12rem;
+        }
+        #output {
+            white-space: pre-wrap;
+            background: #111827;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 8px;
+            min-height: 10rem;
+            font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+            overflow-x: auto;
+        }
+        .token-badge {
+            background: #eef2ff;
+            color: #1d4ed8;
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-right: 0.5rem;
+        }
+        .danger {
+            background: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <h1>Study Buddy API Quick Tester</h1>
+    <p>Use this lightweight page to exercise the authentication flow and core endpoints without additional tooling.</p>
+
+    <section>
+        <fieldset>
+            <legend>API Configuration</legend>
+            <label for="baseUrl">API Base URL</label>
+            <input id="baseUrl" type="url" placeholder="https://your-worker-domain.workers.dev" />
+            <div class="row">
+                <div>
+                    <button id="applyConfig">Apply &amp; Save</button>
+                </div>
+                <div>
+                    <button id="resetState" class="secondary" type="button">Reset Local State</button>
+                </div>
+            </div>
+            <p><strong>Current Token State:</strong></p>
+            <div id="tokenState"></div>
+        </fieldset>
+    </section>
+
+    <section>
+        <fieldset>
+            <legend>Register</legend>
+            <form id="registerForm">
+                <label for="regUsername">Username</label>
+                <input id="regUsername" name="username" required minlength="3" />
+
+                <label for="regEmail">Email</label>
+                <input id="regEmail" name="email" type="email" required />
+
+                <label for="regPassword">Password</label>
+                <input id="regPassword" name="password" type="password" required minlength="6" />
+
+                <label for="regGoals">Goals (optional)</label>
+                <textarea id="regGoals" name="goals" rows="2"></textarea>
+
+                <label for="regPreference">Study Preference</label>
+                <select id="regPreference" name="study_preference">
+                    <option value="">-- Optional --</option>
+                    <option value="group">Group</option>
+                    <option value="one-on-one">One-on-one</option>
+                    <option value="both">Both</option>
+                </select>
+
+                <button type="submit">Register &amp; Auto Login</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Login</legend>
+            <form id="loginForm">
+                <label for="loginIdentifier">Username or Email</label>
+                <input id="loginIdentifier" name="username_or_email" required />
+
+                <label for="loginPassword">Password</label>
+                <input id="loginPassword" name="password" type="password" required />
+
+                <button type="submit">Login</button>
+            </form>
+        </fieldset>
+
+        <fieldset>
+            <legend>Token Refresh</legend>
+            <button id="refreshTokenBtn" type="button">Refresh Access Token</button>
+        </fieldset>
+    </section>
+
+    <section>
+        <fieldset>
+            <legend>Authenticated Requests</legend>
+            <form id="profileForm">
+                <label for="profileUserId">User ID</label>
+                <input id="profileUserId" name="userId" type="number" min="1" required />
+                <button type="submit">Fetch Profile</button>
+            </form>
+
+            <form id="matchForm">
+                <div class="row">
+                    <div>
+                        <label for="matchUserId">User ID</label>
+                        <input id="matchUserId" name="user_id" type="number" min="1" required />
+                    </div>
+                    <div>
+                        <label for="matchCourse">Course (optional)</label>
+                        <input id="matchCourse" name="course" />
+                    </div>
+                    <div>
+                        <label for="matchSkill">Skill ID (optional)</label>
+                        <input id="matchSkill" name="skill_id" type="number" min="1" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div>
+                        <label for="matchWeekday">Weekday (0-6)</label>
+                        <input id="matchWeekday" name="weekday" type="number" min="0" max="6" />
+                    </div>
+                    <div>
+                        <label for="matchTime">Time Slot</label>
+                        <input id="matchTime" name="time_slot" placeholder="HH:MM-HH:MM" />
+                    </div>
+                    <div>
+                        <label for="matchPreference">Study Preference</label>
+                        <select id="matchPreference" name="study_preference">
+                            <option value="">-- Any --</option>
+                            <option value="group">Group</option>
+                            <option value="one-on-one">One-on-one</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit">Search Matches</button>
+            </form>
+        </fieldset>
+    </section>
+
+    <section>
+        <fieldset>
+            <legend>Response Output</legend>
+            <div id="output">Ready.</div>
+        </fieldset>
+    </section>
+
+    <script>
+        const outputEl = document.getElementById("output");
+        const tokenStateEl = document.getElementById("tokenState");
+        const baseUrlInput = document.getElementById("baseUrl");
+        const applyConfigBtn = document.getElementById("applyConfig");
+        const resetStateBtn = document.getElementById("resetState");
+        const refreshTokenBtn = document.getElementById("refreshTokenBtn");
+
+        const state = {
+            baseUrl: localStorage.getItem("sb-api-base") || "http://localhost:8787",
+            accessToken: localStorage.getItem("sb-access-token") || "",
+            refreshToken: localStorage.getItem("sb-refresh-token") || "",
+            userId: localStorage.getItem("sb-user-id") || "",
+        };
+
+        baseUrlInput.value = state.baseUrl;
+        updateTokenState();
+
+        function logResult(label, data) {
+            const timestamp = new Date().toLocaleTimeString();
+            const formatted = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+            outputEl.textContent = `[${timestamp}] ${label}\n\n${formatted}`;
+        }
+
+        function updateTokenState() {
+            const tokens = [
+                state.accessToken ? `<span class="token-badge">Access ✓</span>` : `<span class="token-badge danger">Access ✗</span>`,
+                state.refreshToken ? `<span class="token-badge">Refresh ✓</span>` : `<span class="token-badge danger">Refresh ✗</span>`,
+                state.userId ? `<span class="token-badge">User ID: ${state.userId}</span>` : `<span class="token-badge danger">User ID: unset</span>`,
+            ];
+            tokenStateEl.innerHTML = tokens.join("");
+            refreshTokenBtn.disabled = !state.refreshToken;
+        }
+
+        async function apiFetch(path, options = {}) {
+            const url = `${state.baseUrl}${path}`;
+            const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+
+            if (options.auth && state.accessToken) {
+                headers.Authorization = `Bearer ${state.accessToken}`;
+            }
+
+            const response = await fetch(url, {
+                method: options.method || "GET",
+                headers,
+                body: options.body ? JSON.stringify(options.body) : undefined,
+            });
+
+            const text = await response.text();
+            let data;
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (error) {
+                data = { raw: text, parseError: error.message };
+            }
+
+            if (!response.ok) {
+                throw { status: response.status, statusText: response.statusText, data };
+            }
+
+            return data;
+        }
+
+        function persistState() {
+            localStorage.setItem("sb-api-base", state.baseUrl);
+            state.accessToken ? localStorage.setItem("sb-access-token", state.accessToken) : localStorage.removeItem("sb-access-token");
+            state.refreshToken ? localStorage.setItem("sb-refresh-token", state.refreshToken) : localStorage.removeItem("sb-refresh-token");
+            state.userId ? localStorage.setItem("sb-user-id", state.userId) : localStorage.removeItem("sb-user-id");
+        }
+
+        document.getElementById("registerForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const payload = Object.fromEntries(formData.entries());
+            if (!payload.study_preference) {
+                delete payload.study_preference;
+            }
+            if (!payload.goals) {
+                delete payload.goals;
+            }
+
+            try {
+                const result = await apiFetch("/auth/register", { method: "POST", body: payload });
+                state.accessToken = result.result.tokens.accessToken;
+                state.refreshToken = result.result.tokens.refreshToken;
+                state.userId = result.result.user.id;
+                persistState();
+                updateTokenState();
+                document.getElementById("profileUserId").value = state.userId;
+                document.getElementById("matchUserId").value = state.userId;
+                logResult("Registration success", result);
+            } catch (error) {
+                logResult("Registration failed", error);
+            }
+        });
+
+        document.getElementById("loginForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const payload = Object.fromEntries(formData.entries());
+
+            try {
+                const result = await apiFetch("/auth/login", { method: "POST", body: payload });
+                state.accessToken = result.result.tokens.accessToken;
+                state.refreshToken = result.result.tokens.refreshToken;
+                state.userId = result.result.user.id;
+                persistState();
+                updateTokenState();
+                document.getElementById("profileUserId").value = state.userId;
+                document.getElementById("matchUserId").value = state.userId;
+                logResult("Login success", result);
+            } catch (error) {
+                logResult("Login failed", error);
+            }
+        });
+
+        document.getElementById("profileForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const userId = event.currentTarget.userId.value.trim();
+            if (!userId) {
+                return;
+            }
+            try {
+                const result = await apiFetch(`/users/${userId}/profile`, { auth: true });
+                logResult("Profile fetched", result);
+            } catch (error) {
+                logResult("Profile request failed", error);
+            }
+        });
+
+        document.getElementById("matchForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const params = new URLSearchParams();
+            for (const [key, value] of formData.entries()) {
+                if (value) {
+                    params.append(key, value.toString());
+                }
+            }
+
+            try {
+                const result = await apiFetch(`/search/match?${params.toString()}`, { auth: true });
+                logResult("Match search completed", result);
+            } catch (error) {
+                logResult("Match search failed", error);
+            }
+        });
+
+        refreshTokenBtn.addEventListener("click", async () => {
+            if (!state.refreshToken) {
+                return;
+            }
+            try {
+                const result = await apiFetch("/auth/refresh", { method: "POST", body: { refreshToken: state.refreshToken } });
+                state.accessToken = result.result.tokens.accessToken;
+                state.refreshToken = result.result.tokens.refreshToken;
+                persistState();
+                updateTokenState();
+                logResult("Token refresh success", result);
+            } catch (error) {
+                logResult("Token refresh failed", error);
+            }
+        });
+
+        applyConfigBtn.addEventListener("click", () => {
+            const nextBase = baseUrlInput.value.trim().replace(/\/$/, "");
+            if (!nextBase) {
+                alert("Please provide a valid base URL.");
+                return;
+            }
+            state.baseUrl = nextBase;
+            persistState();
+            logResult("Configuration", { message: "Base URL updated", baseUrl: state.baseUrl });
+        });
+
+        resetStateBtn.addEventListener("click", () => {
+            if (!confirm("Clear stored tokens and configuration?")) {
+                return;
+            }
+            state.accessToken = "";
+            state.refreshToken = "";
+            state.userId = "";
+            localStorage.removeItem("sb-access-token");
+            localStorage.removeItem("sb-refresh-token");
+            localStorage.removeItem("sb-user-id");
+            updateTokenState();
+            logResult("State cleared", "Authentication state has been reset.");
+        });
+
+        if (state.userId) {
+            document.getElementById("profileUserId").value = state.userId;
+            document.getElementById("matchUserId").value = state.userId;
+        }
+    </script>
+</body>
+</html>

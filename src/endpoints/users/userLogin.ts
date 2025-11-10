@@ -1,12 +1,14 @@
 import { OpenAPIRoute, contentJson } from "chanfana";
 import { z } from "zod";
 import { AppContext } from "../../types";
+import { comparePassword } from "../../utils/password";
+import { generateTokenPair } from "../../utils/jwt";
 
 export class UserLogin extends OpenAPIRoute {
 	public schema = {
 		tags: ["Authentication"],
 		summary: "User login",
-		description: "Authenticate user with username/email and password",
+		description: "Authenticate user with username/email and password. Returns JWT access and refresh tokens.",
 		request: {
 			body: contentJson(
 				z.object({
@@ -17,7 +19,7 @@ export class UserLogin extends OpenAPIRoute {
 		},
 		responses: {
 			"200": {
-				description: "Login successful",
+				description: "Login successful with JWT tokens",
 				...contentJson({
 					success: z.boolean(),
 					result: z.object({
@@ -28,7 +30,11 @@ export class UserLogin extends OpenAPIRoute {
 							goals: z.string().nullable(),
 							study_preference: z.string().nullable(),
 						}),
-						token: z.string().describe("Authentication token (placeholder)"),
+						tokens: z.object({
+							accessToken: z.string().describe("JWT access token (short-lived)"),
+							refreshToken: z.string().describe("JWT refresh token (long-lived)"),
+							expiresIn: z.number().describe("Access token expiration in seconds"),
+						}),
 					}),
 				}),
 			},
@@ -61,9 +67,10 @@ export class UserLogin extends OpenAPIRoute {
 			);
 		}
 
-		// Verify password
-		const password_hash = await this.hashPassword(password);
-		if (password_hash !== user.password_hash) {
+		// Verify password using bcrypt
+		const isPasswordValid = await comparePassword(password, user.password_hash as string);
+		
+		if (!isPasswordValid) {
 			return c.json(
 				{
 					success: false,
@@ -73,8 +80,16 @@ export class UserLogin extends OpenAPIRoute {
 			);
 		}
 
-		// In production, generate a real JWT token
-		const token = await this.generateToken(user.id as number);
+		// Generate JWT token pair
+		const tokens = await generateTokenPair(
+			{
+				userId: user.id as number,
+				email: user.email as string,
+			},
+			c.env.JWT_SECRET,
+			c.env.JWT_ACCESS_EXPIRATION,
+			c.env.JWT_REFRESH_EXPIRATION
+		);
 
 		return {
 			success: true,
@@ -86,27 +101,8 @@ export class UserLogin extends OpenAPIRoute {
 					goals: user.goals,
 					study_preference: user.study_preference,
 				},
-				token,
+				tokens,
 			},
 		};
-	}
-
-	private async hashPassword(password: string): Promise<string> {
-		const encoder = new TextEncoder();
-		const data = encoder.encode(password);
-		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-		const hashArray = Array.from(new Uint8Array(hashBuffer));
-		return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-	}
-
-	private async generateToken(userId: number): Promise<string> {
-		// Placeholder token generation
-		// In production, use JWT with proper signing
-		const tokenData = `${userId}:${Date.now()}`;
-		const encoder = new TextEncoder();
-		const data = encoder.encode(tokenData);
-		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-		const hashArray = Array.from(new Uint8Array(hashBuffer));
-		return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 	}
 }

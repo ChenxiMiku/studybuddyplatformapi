@@ -1,12 +1,14 @@
 import { OpenAPIRoute, contentJson } from "chanfana";
 import { z } from "zod";
 import { AppContext } from "../../types";
+import { hashPassword } from "../../utils/password";
+import { generateTokenPair } from "../../utils/jwt";
 
 export class UserRegister extends OpenAPIRoute {
 	public schema = {
 		tags: ["Authentication"],
 		summary: "Register a new user",
-		description: "Create a new user account with username, email, and password",
+		description: "Create a new user account with username, email, and password. Returns JWT tokens for immediate login.",
 		request: {
 			body: contentJson(
 				z.object({
@@ -20,16 +22,23 @@ export class UserRegister extends OpenAPIRoute {
 		},
 		responses: {
 			"200": {
-				description: "User registered successfully",
+				description: "User registered successfully with JWT tokens",
 				...contentJson({
 					success: z.boolean(),
 					result: z.object({
-						id: z.number(),
-						username: z.string(),
-						email: z.string(),
-						goals: z.string().nullable(),
-						study_preference: z.string().nullable(),
-						created_at: z.string(),
+						user: z.object({
+							id: z.number(),
+							username: z.string(),
+							email: z.string(),
+							goals: z.string().nullable(),
+							study_preference: z.string().nullable(),
+							created_at: z.string(),
+						}),
+						tokens: z.object({
+							accessToken: z.string().describe("JWT access token (short-lived)"),
+							refreshToken: z.string().describe("JWT refresh token (long-lived)"),
+							expiresIn: z.number().describe("Access token expiration in seconds"),
+						}),
 					}),
 				}),
 			},
@@ -60,9 +69,8 @@ export class UserRegister extends OpenAPIRoute {
 			);
 		}
 
-		// In production, use proper password hashing (bcrypt, argon2, etc.)
-		// For now, we'll use a simple hash placeholder
-		const password_hash = await this.hashPassword(password);
+		// Hash password using bcrypt
+		const password_hash = await hashPassword(password);
 
 		// Insert new user
 		const result = await c.env.DB.prepare(
@@ -79,19 +87,33 @@ export class UserRegister extends OpenAPIRoute {
 			.bind(result.meta.last_row_id)
 			.first();
 
+		if (!newUser) {
+			return c.json(
+				{
+					success: false,
+					errors: [{ code: 5001, message: "Failed to create user" }],
+				},
+				500
+			);
+		}
+
+		// Generate JWT token pair
+		const tokens = await generateTokenPair(
+			{
+				userId: newUser.id as number,
+				email: newUser.email as string,
+			},
+			c.env.JWT_SECRET,
+			c.env.JWT_ACCESS_EXPIRATION,
+			c.env.JWT_REFRESH_EXPIRATION
+		);
+
 		return {
 			success: true,
-			result: newUser,
+			result: {
+				user: newUser,
+				tokens,
+			},
 		};
-	}
-
-	// Simple password hashing (in production, use bcrypt or argon2)
-	private async hashPassword(password: string): Promise<string> {
-		// This is a placeholder. In production, use proper hashing
-		const encoder = new TextEncoder();
-		const data = encoder.encode(password);
-		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-		const hashArray = Array.from(new Uint8Array(hashBuffer));
-		return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 	}
 }
