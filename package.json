@@ -17,6 +17,7 @@
 		"publish": true
 	},
 	"scripts": {
+		"build": "cd frontend-react && npm install && npm run build",
 		"cf-typegen": "wrangler types",
 		"deploy": "wrangler deploy",
 		"dev": "pnpm seedLocalDb && wrangler dev",
