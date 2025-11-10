@@ -21,6 +21,8 @@
 		"cf-typegen": "wrangler types",
 		"deploy": "wrangler deploy",
 		"dev": "pnpm seedLocalDb && wrangler dev",
+		"migrations:list": "wrangler d1 migrations list DB",
+		"migrations:apply": "wrangler d1 migrations apply DB",
 		"predeploy": "wrangler d1 migrations apply DB --remote",
 		"seedLocalDb": "wrangler d1 migrations apply DB --local",
 		"schema": "npx chanfana",
